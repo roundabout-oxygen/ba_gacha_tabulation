@@ -1,0 +1,37 @@
+name: Monthly Student Icons Auto-Update
+
+on:
+  schedule:
+    # 毎月1日の午前0時 (UTC) に定期実行
+    - cron: '0 0 1 * *'
+  workflow_dispatch: # GitHubのWeb画面から手動実行も可能
+
+jobs:
+  update-icons:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run icon fetcher script
+        run: node scripts/fetch_icons.js
+
+      - name: Commit and push changes if updated
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action [bot]"
+          git add data/student_icons.json
+          if git diff --staged --quiet; then
+            echo "No changes in student icons."
+          else
+            git commit -m "chore(icons): auto-update student icons [skip ci]"
+            git push origin main
+          fi

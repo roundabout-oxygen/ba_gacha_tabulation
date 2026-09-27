@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gacha Tabulation | Blue Archive Gacha Analytics</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#00aeef">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header>
+      <div class="logo-section">
+        <div class="logo-icon">G</div>
+        <div class="title-group">
+          <h1>Gacha Tabulation</h1>
+          <p>シャーレ ガチャ履歴統計集計システム <span class="version-badge">v1.0.1</span></p>
+        </div>
+      </div>
+      <div id="headerSyncStatus" class="header-sync-status" style="display: none;">
+        <span class="sync-dot"></span>
+        <span id="headerSyncText">スプレッドシート同期中</span>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs-nav">
+      <button class="tab-btn active" data-tab="dashboard">📊 ダッシュボード</button>
+      <button class="tab-btn" data-tab="history">📋 ガチャ履歴一覧</button>
+      <button class="tab-btn" data-tab="directory">🎓 排出☆3生徒図鑑</button>
+      <button class="tab-btn" id="pasteTabBtn" data-tab="pasteInput">📥 データ連携・入力</button>
+    </nav>
+
+    <!-- TAB: Dashboard -->
+    <div id="dashboard" class="tab-content active">
+      <!-- Stats Grid -->
+      <div class="grid-cols-5">
+        <!-- Total Pulls -->
+        <div class="card">
+          <div class="card-title">総ガチャ回数 / 消費青輝石</div>
+          <div class="card-value" id="statTotalPulls">0 <span class="unit">連</span></div>
+          <div class="card-subtext">
+            <span>消費: </span><span id="statTotalPyroxene" style="color: var(--primary); font-weight: 600;">0</span><span> 石</span>
+          </div>
+        </div>
+
+        <!-- 3% Rate -->
+        <div class="card" id="cardThreeStarRate3">
+          <div class="card-title">☆3確率 (3%通常枠)</div>
+          <div class="card-value"><span id="statNormalRate">0.00</span> <span class="unit">%</span></div>
+          <div class="card-subtext" id="subtextThreeStar3">
+            <span>獲得: 0 人 / 0連</span>
+          </div>
+        </div>
+
+        <!-- 6% Rate -->
+        <div class="card" id="cardThreeStarRate6">
+          <div class="card-title">☆3確率 (6%フェス枠)</div>
+          <div class="card-value" style="color: var(--secondary);"><span id="statAnniversaryRate">0.00</span> <span class="unit">%</span></div>
+          <div class="card-subtext" id="subtextThreeStar6">
+            <span>獲得: 0 人 / 0連</span>
+          </div>
+        </div>
+
+        <!-- Pickup Rate -->
+        <div class="card">
+          <div class="card-title">ピックアップ確率 (実測 / 公表)</div>
+          <div class="card-value" id="statPickupRate">0.00 <span class="unit">%</span></div>
+          <div class="card-subtext" id="subtextPickup">
+            <span>獲得: 0 人 (期待値: 0.0 人) / 0連</span>
+          </div>
+        </div>
+
+        <!-- 100-pull 50% Win Rate -->
+        <div class="card">
+          <div class="card-title">100連目50%枠 勝率 (実測)</div>
+          <div class="card-value" id="statGuaranteeWinRate">0.0 <span class="unit">%</span></div>
+          <div class="card-subtext">
+            <span>勝: </span><span id="statGuaranteeWins" style="color: var(--success); font-weight: 600;">0</span>
+            <span> / 敗: </span><span id="statGuaranteeLosses" style="color: var(--secondary); font-weight: 600;">0</span>
+            <span> (計: </span><span id="statGuaranteeTotal">0</span><span>)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Visualizations Chart: Relative Error Matrix Line Chart -->
+      <div class="card chart-card">
+        <div class="chart-header">
+          <div class="card-title">★3 確率収束 ＆ 相対誤差マトリクス (セッション時系列)</div>
+          <div class="chart-legend-custom">
+            <span class="legend-item"><span class="legend-dot" style="background: var(--primary);"></span>通常(3%) 乖離率</span>
+            <span class="legend-item"><span class="legend-dot" style="background: var(--secondary);"></span>フェス(6%) 乖離率</span>
+            <span class="legend-item"><span class="legend-dot" style="background: rgba(140, 150, 160, 0.6);"></span>公表確率 基準線(0%)</span>
+          </div>
+        </div>
+        <div class="chart-container" style="position: relative; height: 380px;">
+          <canvas id="rateConvergenceChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Gacha Summary Details -->
+      <div class="card">
+        <div class="card-title">ガチャ集計分析詳細</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 12px; font-size: 13px;">
+          <div>
+            <p style="color: var(--text-muted);">☆3なし最大ハマり（継続中含む）:</p>
+            <p style="font-size: 18px; font-weight: 600; color: #ff9100;" id="statMaxStreak">0 <span style="font-size:12px; color:var(--text-muted);">連</span></p>
+            <p style="color: var(--text-muted); font-size: 11px;">現在ハマり: <span id="statCurrentStreak">0</span>連</p>
+          </div>
+          <div>
+            <p style="color: var(--text-muted);">期待値との過不足 (運のブレ):</p>
+            <p style="font-size: 18px; font-weight: 600;" id="statLuckDiff">-</p>
+            <p style="color: var(--text-muted); font-size: 11px;" id="statLuckDiffDetails">期待値との差</p>
+          </div>
+          <div>
+            <p style="color: var(--text-muted);">天井到達と総ガチャ比較:</p>
+            <p style="font-size: 18px; font-weight: 600; color: #c5a059;" id="statCeilingComparison">-</p>
+            <p style="color: var(--text-muted); font-size: 11px;" id="statCeilingComparisonDetails">天井: -人 / 自力: -人</p>
+          </div>
+
+          <div>
+            <p style="color: var(--text-muted);">ガチャ運総合評価:</p>
+            <p style="font-size: 18px; font-weight: 600;" id="statLuckEvaluation">-</p>
+            <p style="color: var(--text-muted); font-size: 11px;" id="statLuckDetails">二項分布確率計算に基づく</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: Gacha History Table -->
+    <div id="history" class="tab-content">
+      <div class="card table-card">
+        <div class="table-header-bar">
+          <div class="table-title">ガチャ履歴データ一覧 (<span id="tableRowCount">0</span> 件)</div>
+          <div class="filters-group">
+            <button class="filter-btn active" data-filter="all">すべて</button>
+            <button class="filter-btn" data-filter="threeStar">☆3獲得のみ</button>
+            <button class="filter-btn" data-filter="normal">通常(3%)</button>
+            <button class="filter-btn" data-filter="anniv">フェス(6%)</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="gacha-table" id="gachaHistoryTable">
+            <thead>
+              <tr>
+                <th data-sort="cumulative">累計連数</th>
+                <th data-sort="date">日付</th>
+                <th data-sort="pulls">引数</th>
+                <th data-sort="threeStar">☆3数</th>
+                <th data-sort="pickup">PU数</th>
+                <th data-sort="new">新規数</th>
+                <th data-sort="owned">被り数</th>
+                <th>排出された☆3生徒名</th>
+                <th data-sort="rate">適用確率</th>
+                <th>備考</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <!-- JSで挿入されます -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: Student Directory -->
+    <div id="directory" class="tab-content">
+      <div class="card">
+        <div class="table-header-bar">
+          <div class="table-title">排出された☆3生徒一覧 (<span id="directoryCount">0</span> 名)</div>
+          <div class="filters-group">
+            <button class="filter-btn active" data-dir-filter="all">全員</button>
+            <button class="filter-btn" data-dir-filter="pickup">ピックアップのみ</button>
+            <button class="filter-btn" data-dir-filter="new">新規のみ</button>
+            <button class="filter-btn" data-dir-filter="spook">被りのみ</button>
+            <button class="filter-btn" data-dir-filter="rate50">50%のみ</button>
+            <button class="filter-btn" data-dir-filter="rate100">100%交換</button>
+            <button class="filter-btn" id="toggleIconImportBtn" style="border-color: var(--primary); color: var(--primary); font-weight: 600;">🔄 アイコン取得</button>
+          </div>
+        </div>
+
+        <!-- Collapsible Import Panel (手動バックアップ用) -->
+        <div class="icon-import-panel" id="iconImportPanel">
+          <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #fff;">手動でのアイコン表貼り付け登録 (予備)</h3>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5;">
+            ※通常は「🔄 アイコン取得」ボタンを押せば自動で最新アイコンを取得できます。<br>
+            手動で登録したい場合は、Wikiの <a href="https://bluearchive.wikiru.jp/?%E3%82%AD%E3%83%A3%E3%83%A9%E3%82%AF%E3%82%BF%E3%83%BC%E4%B8%80%E8%A6%A7" target="_blank" style="color: var(--primary); text-decoration: underline;">キャラクター一覧 🌐</a> や <a href="https://bluearchive.wikiru.jp/?テーブル/キャラアイコン" target="_blank" style="color: var(--primary); text-decoration: underline;">テーブル/キャラアイコン 🌐</a> の表全体をコピーして下に貼り付けてください。
+          </p>
+          <div class="paste-container" id="iconPasteContainer" style="padding: 16px; border-style: dotted; margin-bottom: 10px;">
+            <div class="paste-title" style="font-size: 13px;">ここにWikiのアイコン表を貼り付け (Ctrl + V)</div>
+            <div id="iconPasteTarget" class="paste-area" contenteditable="true"></div>
+          </div>
+          <div id="iconImportStatus" style="display: none; font-size: 12px; color: var(--success); font-weight: 500;">
+            登録完了: 0名の顔アイコンをデータベースにマッピングしました！
+          </div>
+        </div>
+
+        <div class="student-directory-grid" id="studentDirectoryContainer">
+          <!-- JSで挿入されます -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: Data Integration & Paste Input -->
+    <div id="pasteInput" class="tab-content">
+      <!-- 1. Google Sheets Auto-Sync Card -->
+      <div class="card" style="margin-bottom: 20px; border: 1.5px solid rgba(0, 174, 239, 0.4); background: linear-gradient(180deg, rgba(0, 174, 239, 0.04) 0%, rgba(255, 255, 255, 0.6) 100%);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+          <h2 style="font-size: 17px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+            <span>🌐</span> Googleスプレッドシート自動巡回連携
+          </h2>
+          <span id="sheetSyncBadge" class="status-pill status-pill-idle">未連携</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6;">
+          GoogleスプレッドシートのURLを登録すると、<b>アプリ起動時に自動で最新データを巡回・反映</b>します。<br>
+          <span style="color: var(--primary); font-weight: 600;">🔒 プライバシー保護:</span> 個人のガチャ結果は外部サーバー等に一切送信・保存されず、お使いの端末ブラウザ（localStorage）内だけで安全に管理されます。
+        </p>
+
+        <div class="url-input-container">
+          <input type="text" id="spreadsheetUrlInput" class="url-text-input" placeholder="https://docs.google.com/spreadsheets/d/13ki95KgONxgEqdMc86BLb-W3RSzIUxMc6o_nDIVFmQY/edit?gid=1395601948...">
+          <div class="url-btn-group">
+            <button id="saveAndSyncSheetBtn" class="btn btn-primary">🔄 URLを保存して同期</button>
+            <button id="syncNowBtn" class="btn btn-secondary" style="display: none;">⚡ 今すぐ再同期</button>
+            <button id="clearSheetUrlBtn" class="btn btn-outline-danger" style="display: none;">連携解除</button>
+          </div>
+        </div>
+
+        <div id="sheetSyncMessage" style="display: none; margin-top: 12px; font-size: 12px; padding: 10px 14px; border-radius: 6px;"></div>
+      </div>
+
+      <!-- 2. Manual Paste Card -->
+      <div class="card" style="margin-bottom: 20px;">
+        <h2 style="font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #fff; display: flex; align-items: center; gap: 8px;">
+          <span>📋</span> 手動データ貼り付け (ペースト)
+        </h2>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6;">
+          スプレッドシートでセル範囲を選択してコピー（<code>Ctrl + C</code>）し、下の点線エリアを<b>クリックした後に貼り付け（<code>Ctrl + V</code>）</b>することでも即座に集計できます。<br>
+          <span style="color: var(--primary);">※セルの背景色（黄色：ピックアップ、緑色：新規）も同時に自動判別されます。</span>
+        </p>
+
+        <div class="paste-container" id="pasteContainer">
+          <div class="paste-icon">📋</div>
+          <div class="paste-title">ここにコピーしたデータを貼り付け (Ctrl + V)</div>
+          <div class="paste-desc">
+            コピーされた表データが自動解析され、ダッシュボードや図鑑が即座に更新されます。<br>
+            ペースト後、データはブラウザのローカルストレージに自動保存されます。
+          </div>
+          <!-- HTMLペーストを受けるためのcontenteditable要素 -->
+          <div id="pasteTarget" class="paste-area" contenteditable="true"></div>
+        </div>
+        
+        <div id="pasteStatus" style="display: none; padding: 12px; border-radius: 6px; background: rgba(var(--success-rgb), 0.1); border: 1px solid rgba(var(--success-rgb), 0.3); font-size: 13px; color: var(--success); margin-top: 12px;">
+          <strong>解析成功:</strong> <span id="parsedSummaryText">0行のデータをパースし、0件の☆3排出を記録しました。</span>
+        </div>
+      </div>
+      
+      <!-- 3. Spreadsheet Sample & Template Generator Card -->
+      <div class="card">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <h2 style="font-size: 17px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
+            <span>📄</span> スプレッドシート作成サンプル ＆ テンプレート
+          </h2>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button id="btnCopySampleTsv" class="btn btn-secondary btn-sm">📋 サンプルデータをコピー</button>
+            <button id="btnDownloadSampleCsv" class="btn btn-primary btn-sm">📥 テンプレートCSVダウンロード</button>
+            <button id="btnLoadSampleData" class="btn btn-outline-info btn-sm">🧪 サンプルでアプリを試す</button>
+          </div>
+        </div>
+
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 14px;">
+          新しくガチャ記録用のGoogleスプレッドシートを作成したい方向けのテンプレートです。<br>
+          「サンプルデータをコピー」してGoogleスプレッドシートのA1セルに貼り付けるか、「テンプレートCSV」をダウンロードしてGoogleドライブにインポートするだけで、すぐにお使いいただけます。
+        </p>
+
+        <!-- Sample Table Preview -->
+        <div class="table-responsive" style="max-height: 220px; overflow-y: auto; margin-bottom: 14px; border: 1px solid var(--border); border-radius: 6px;">
+          <table class="gacha-table" style="font-size: 12px;">
+            <thead>
+              <tr>
+                <th>A: 累計</th>
+                <th>B: 日付</th>
+                <th>C: 引</th>
+                <th>D: ☆3</th>
+                <th>E: pick</th>
+                <th>F: 新</th>
+                <th>G: 既</th>
+                <th>H: 生徒名1</th>
+                <th>I: 生徒名2</th>
+                <th>J: 生徒名3</th>
+                <th>K: 生徒名4</th>
+                <th>L: pick率</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>10</td><td>8/5</td><td>10</td><td>0</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>6%</td></tr>
+              <tr><td>20</td><td>8/5</td><td>10</td><td>1</td><td>1</td><td>1</td><td></td><td style="background: rgba(234, 179, 8, 0.2);">イブキ（水着）</td><td></td><td></td><td></td><td>6%</td></tr>
+              <tr><td>30</td><td>8/5</td><td>10</td><td>2</td><td></td><td>1</td><td>1</td><td>ネル（制服）</td><td style="background: rgba(239, 68, 68, 0.2);">レンゲ</td><td></td><td></td><td>6%</td></tr>
+              <tr><td>100</td><td>8/26</td><td>1</td><td>1</td><td>1</td><td></td><td></td><td style="background: rgba(16, 185, 129, 0.2);">ユカリ（水着）</td><td></td><td></td><td></td><td>50%</td></tr>
+              <tr><td>200</td><td>8/26</td><td>1</td><td>1</td><td>1</td><td></td><td>1</td><td style="background: rgba(17, 24, 39, 0.3);">アリス（臨戦）</td><td></td><td></td><td></td><td>100%</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <details style="font-size: 12px; color: var(--text-muted); line-height: 1.6; background: rgba(0,0,0,0.15); padding: 12px; border-radius: 6px;">
+          <summary style="cursor: pointer; font-weight: 600; color: var(--text);">📖 スプレッドシート各列の入力ルール詳細</summary>
+          <ul style="padding-left: 20px; margin-top: 8px;">
+            <li><b>A列 (累計):</b> これまでに引いた累計連数（10, 20, 30...）</li>
+            <li><b>B列 (日付):</b> ガチャを引いた日（8/5, 2026/08/05 など）</li>
+            <li><b>C列 (引):</b> その回で引いた連数（通常は10、単発や端数は1など）</li>
+            <li><b>D列 (☆3):</b> 排出された☆3生徒の人数（0人なら0または空欄）</li>
+            <li><b>E列 (pick):</b> 排出されたピックアップ生徒の人数</li>
+            <li><b>F列 (新):</b> 初獲得となった新規生徒の人数</li>
+            <li><b>G列 (既):</b> すでに所持している被り生徒の人数</li>
+            <li><b>H〜K列 (生徒名):</b> 排出された☆3生徒名（1回の10連で最大4名まで入力可）</li>
+            <li><b>L列 (pick率):</b> そのガチャの☆3提供割合（通常ガチャは<code>3%</code>、周年フェスは<code>6%</code>、仮天井は<code>50%</code>、200連天井交換は<code>100%</code>）</li>
+          </ul>
+        </details>
+      </div>
+    </div>
+
+    <!-- App Footer -->
+    <footer class="app-footer">
+      <div>Gacha Tabulation <span class="version-badge">v1.0.1</span> | Blue Archive Statistics Analyzer</div>
+      <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Created for roundabout-oxygen | Fully Client-side & Privacy-Protected</div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

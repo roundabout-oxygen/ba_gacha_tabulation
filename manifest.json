@@ -1,0 +1,16 @@
+{
+  "name": "Gacha Tabulation",
+  "short_name": "GachaTab",
+  "description": "Blue Archive Gacha Analytics System - ガチャ履歴統計集計システム",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a101d",
+  "theme_color": "#00aeef",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2300aeef'/><text x='50' y='68' font-size='50' font-weight='bold' fill='white' text-anchor='middle'>G</text></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
