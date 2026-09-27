@@ -931,10 +931,10 @@ code {
   min-width: 280px;
   padding: 10px 14px;
   font-size: 13px;
-  background: rgba(14, 22, 37, 0.6);
+  background: #ffffff;
   border: 1.5px solid var(--border);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-main);
   transition: var(--transition);
   font-family: inherit;
 }
@@ -943,7 +943,11 @@ code {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 10px rgba(0, 174, 239, 0.25);
-  background: rgba(14, 22, 37, 0.9);
+  background: #ffffff;
+}
+
+.url-text-input::placeholder {
+  color: var(--text-muted);
 }
 
 .url-btn-group {
@@ -1044,6 +1048,148 @@ code {
 }
 
 /* ==========================================================================
+   Table Controls & Search Bar
+   ========================================================================== */
+.table-controls-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.search-box-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 220px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 6px 30px 6px 12px;
+  background: #ffffff;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-main);
+  font-size: 12px;
+  outline: none;
+  transition: var(--transition);
+}
+
+.search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 10px rgba(0, 174, 239, 0.25);
+  background: #ffffff;
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  display: none;
+}
+
+.clear-search-btn:hover {
+  color: var(--text-main);
+}
+
+.sort-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sort-select {
+  padding: 5px 8px;
+  background: #ffffff;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-main);
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.sort-select:focus {
+  border-color: var(--primary);
+}
+
+.sort-select option {
+  background: #ffffff;
+  color: var(--text-main);
+}
+
+.filter-count-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(0, 174, 239, 0.12);
+  color: var(--primary);
+  border: 1px solid rgba(0, 174, 239, 0.3);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ==========================================================================
+   Spreadsheet Sync Details & Setup Guide
+   ========================================================================== */
+.sync-detail-panel {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(0, 174, 239, 0.05);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 174, 239, 0.18);
+  font-size: 12px;
+}
+
+.sync-detail-item {
+  color: var(--text-muted);
+}
+
+.sync-detail-item b {
+  color: var(--text-main);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.sync-detail-item span {
+  color: var(--primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+}
+
+.sheet-setup-guide {
+  margin-top: 12px;
+  padding: 14px 18px;
+  background: rgba(0, 174, 239, 0.04);
+  border: 1px dashed rgba(0, 174, 239, 0.35);
+  border-radius: 8px;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
    Footer
    ========================================================================== */
 .app-footer {
@@ -1054,4 +1200,5 @@ code {
   font-size: 12px;
   color: var(--text-muted);
 }
+
 

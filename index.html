@@ -6,7 +6,12 @@
   <title>Gacha Tabulation | Blue Archive Gacha Analytics</title>
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="icon.svg">
   <meta name="theme-color" content="#00aeef">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="GachaTab">
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -19,7 +24,7 @@
         <div class="logo-icon">G</div>
         <div class="title-group">
           <h1>Gacha Tabulation</h1>
-          <p>シャーレ ガチャ履歴統計集計システム <span class="version-badge">v1.0.1</span></p>
+          <p>シャーレ ガチャ履歴統計集計システム <span class="version-badge">v1.0.2</span></p>
         </div>
       </div>
       <div id="headerSyncStatus" class="header-sync-status" style="display: none;">
@@ -136,12 +141,22 @@
     <div id="history" class="tab-content">
       <div class="card table-card">
         <div class="table-header-bar">
-          <div class="table-title">ガチャ履歴データ一覧 (<span id="tableRowCount">0</span> 件)</div>
-          <div class="filters-group">
-            <button class="filter-btn active" data-filter="all">すべて</button>
-            <button class="filter-btn" data-filter="threeStar">☆3獲得のみ</button>
-            <button class="filter-btn" data-filter="normal">通常(3%)</button>
-            <button class="filter-btn" data-filter="anniv">フェス(6%)</button>
+          <div class="table-title">ガチャ履歴データ一覧 (<span id="tableRowCount">0</span> 件 <span id="tableFilterCountBadge" class="filter-count-badge" style="display:none;"></span>)</div>
+          <div class="table-controls-wrap">
+            <div class="search-box-wrap">
+              <input type="text" id="historySearchInput" class="search-input" placeholder="🔍 生徒名・日付・備考で検索...">
+              <button id="clearHistorySearchBtn" class="clear-search-btn" title="検索クリア">×</button>
+            </div>
+            <div class="filters-group">
+              <button class="filter-btn active" data-filter="all">すべて</button>
+              <button class="filter-btn" data-filter="threeStar">☆3獲得のみ</button>
+              <button class="filter-btn" data-filter="pickup">PUのみ</button>
+              <button class="filter-btn" data-filter="new">新規のみ</button>
+              <button class="filter-btn" data-filter="normal">通常(3%)</button>
+              <button class="filter-btn" data-filter="anniv">フェス(6%)</button>
+              <button class="filter-btn" data-filter="rate50">50%枠</button>
+              <button class="filter-btn" data-filter="rate100">100%交換</button>
+            </div>
           </div>
         </div>
 
@@ -173,21 +188,36 @@
     <div id="directory" class="tab-content">
       <div class="card">
         <div class="table-header-bar">
-          <div class="table-title">排出された☆3生徒一覧 (<span id="directoryCount">0</span> 名)</div>
-          <div class="filters-group">
-            <button class="filter-btn active" data-dir-filter="all">全員</button>
-            <button class="filter-btn" data-dir-filter="pickup">ピックアップのみ</button>
-            <button class="filter-btn" data-dir-filter="new">新規のみ</button>
-            <button class="filter-btn" data-dir-filter="spook">被りのみ</button>
-            <button class="filter-btn" data-dir-filter="rate50">50%のみ</button>
-            <button class="filter-btn" data-dir-filter="rate100">100%交換</button>
-            <button class="filter-btn" id="toggleIconImportBtn" style="border-color: var(--primary); color: var(--primary); font-weight: 600;">🔄 アイコン取得</button>
+          <div class="table-title">排出された☆3生徒一覧 (<span id="directoryCount">0</span> 名 <span id="dirFilterCountBadge" class="filter-count-badge" style="display:none;"></span>)</div>
+          <div class="table-controls-wrap">
+            <div class="search-box-wrap">
+              <input type="text" id="dirSearchInput" class="search-input" placeholder="🔍 生徒名で絞り込み (例: アリス, 水着)...">
+              <button id="clearDirSearchBtn" class="clear-search-btn" title="検索クリア">×</button>
+            </div>
+            <div class="sort-select-wrap">
+              <label for="dirSortSelect" style="font-size: 11px; color: var(--text-muted);">並び順:</label>
+              <select id="dirSortSelect" class="sort-select">
+                <option value="recent">入手順 (新→古)</option>
+                <option value="oldest">入手順 (古→新)</option>
+                <option value="count">獲得回数 (多→少)</option>
+                <option value="name">名前順 (50音)</option>
+              </select>
+            </div>
+            <div class="filters-group">
+              <button class="filter-btn active" data-dir-filter="all">全員</button>
+              <button class="filter-btn" data-dir-filter="pickup">PUのみ</button>
+              <button class="filter-btn" data-dir-filter="new">新規のみ</button>
+              <button class="filter-btn" data-dir-filter="spook">被りのみ</button>
+              <button class="filter-btn" data-dir-filter="rate50">50%のみ</button>
+              <button class="filter-btn" data-dir-filter="rate100">100%交換</button>
+              <button class="filter-btn" id="toggleIconImportBtn" style="border-color: var(--primary); color: var(--primary); font-weight: 600;">🔄 アイコン取得</button>
+            </div>
           </div>
         </div>
 
         <!-- Collapsible Import Panel (手動バックアップ用) -->
         <div class="icon-import-panel" id="iconImportPanel">
-          <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #fff;">手動でのアイコン表貼り付け登録 (予備)</h3>
+          <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--text-main);">手動でのアイコン表貼り付け登録 (予備)</h3>
           <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5;">
             ※通常は「🔄 アイコン取得」ボタンを押せば自動で最新アイコンを取得できます。<br>
             手動で登録したい場合は、Wikiの <a href="https://bluearchive.wikiru.jp/?%E3%82%AD%E3%83%A3%E3%83%A9%E3%82%AF%E3%82%BF%E3%83%BC%E4%B8%80%E8%A6%A7" target="_blank" style="color: var(--primary); text-decoration: underline;">キャラクター一覧 🌐</a> や <a href="https://bluearchive.wikiru.jp/?テーブル/キャラアイコン" target="_blank" style="color: var(--primary); text-decoration: underline;">テーブル/キャラアイコン 🌐</a> の表全体をコピーして下に貼り付けてください。
@@ -212,18 +242,21 @@
       <!-- 1. Google Sheets Auto-Sync Card -->
       <div class="card" style="margin-bottom: 20px; border: 1.5px solid rgba(0, 174, 239, 0.4); background: linear-gradient(180deg, rgba(0, 174, 239, 0.04) 0%, rgba(255, 255, 255, 0.6) 100%);">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
-          <h2 style="font-size: 17px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+          <h2 style="font-size: 17px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
             <span>🌐</span> Googleスプレッドシート自動巡回連携
           </h2>
-          <span id="sheetSyncBadge" class="status-pill status-pill-idle">未連携</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button id="toggleSheetGuideBtn" class="btn btn-secondary btn-sm" style="font-size: 11px;">❓ 共有設定ガイド</button>
+            <span id="sheetSyncBadge" class="status-pill status-pill-idle">未連携</span>
+          </div>
         </div>
         <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6;">
-          GoogleスプレッドシートのURLを登録すると、<b>アプリ起動時に自動で最新データを巡回・反映</b>します。<br>
+          Googleスプレッドシートの閲覧URLを登録すると、<b>アプリ起動時に自動で最新データを巡回・反映</b>します。<br>
           <span style="color: var(--primary); font-weight: 600;">🔒 プライバシー保護:</span> 個人のガチャ結果は外部サーバー等に一切送信・保存されず、お使いの端末ブラウザ（localStorage）内だけで安全に管理されます。
         </p>
 
         <div class="url-input-container">
-          <input type="text" id="spreadsheetUrlInput" class="url-text-input" placeholder="https://docs.google.com/spreadsheets/d/13ki95KgONxgEqdMc86BLb-W3RSzIUxMc6o_nDIVFmQY/edit?gid=1395601948...">
+          <input type="text" id="spreadsheetUrlInput" class="url-text-input" placeholder="https://docs.google.com/spreadsheets/d/your-spreadsheet-id/edit#gid=0">
           <div class="url-btn-group">
             <button id="saveAndSyncSheetBtn" class="btn btn-primary">🔄 URLを保存して同期</button>
             <button id="syncNowBtn" class="btn btn-secondary" style="display: none;">⚡ 今すぐ再同期</button>
@@ -232,11 +265,32 @@
         </div>
 
         <div id="sheetSyncMessage" style="display: none; margin-top: 12px; font-size: 12px; padding: 10px 14px; border-radius: 6px;"></div>
+        
+        <!-- Detailed Sync Status Info -->
+        <div id="sheetSyncDetail" class="sync-detail-panel" style="display: none;">
+          <div class="sync-detail-item"><b>最終同期日時:</b> <span id="syncDetailTime">-</span></div>
+          <div class="sync-detail-item"><b>同期行数 / ☆3排出:</b> <span id="syncDetailRows">-</span></div>
+          <div class="sync-detail-item"><b>対象シートID / gid:</b> <span id="syncDetailGid">-</span></div>
+        </div>
+
+        <!-- Collapsible Sheet Setup Guide -->
+        <div id="sheetSetupGuide" class="sheet-setup-guide" style="display: none;">
+          <h4 style="font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">📖 スプレッドシート共有設定の手順 (失敗する場合のチェック)</h4>
+          <ol style="padding-left: 20px; font-size: 12px; color: var(--text-muted); line-height: 1.7;">
+            <li>スプレッドシートの右上にある青い <b>[共有]</b> ボタンをクリックします。</li>
+            <li>「一般的なアクセス」のプルダウンを「制限付き」から <b>「リンクを知っている全員」</b> に変更します。</li>
+            <li>右側の役割が <b>「閲覧者」</b> になっていることを確認して <b>[完了]</b> をクリックします。</li>
+            <li>ブラウザのアドレスバーのURL（または [リンクをコピー] で取得したURL）を上の入力欄に貼り付け、<b>[🔄 URLを保存して同期]</b> を押してください。</li>
+          </ol>
+          <div style="margin-top: 8px; font-size: 11px; color: var(--primary);">
+            💡 ※シートを非公開にしているとGoogleのセキュリティ制限（403/ログイン要求）により自動取得できません。必ず「リンクを知っている全員（閲覧者）」に設定してください。
+          </div>
+        </div>
       </div>
 
       <!-- 2. Manual Paste Card -->
       <div class="card" style="margin-bottom: 20px;">
-        <h2 style="font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #fff; display: flex; align-items: center; gap: 8px;">
+        <h2 style="font-size: 17px; font-weight: 600; margin-bottom: 12px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
           <span>📋</span> 手動データ貼り付け (ペースト)
         </h2>
         <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6;">
@@ -263,7 +317,7 @@
       <!-- 3. Spreadsheet Sample & Template Generator Card -->
       <div class="card">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-          <h2 style="font-size: 17px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
+          <h2 style="font-size: 17px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
             <span>📄</span> スプレッドシート作成サンプル ＆ テンプレート
           </h2>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -322,15 +376,49 @@
           </ul>
         </details>
       </div>
+
+      <!-- 4. Data Backup & Restore (JSON) Card -->
+      <div class="card" style="margin-top: 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <h2 style="font-size: 17px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+            <span>💾</span> データのバックアップ ＆ 復元 (JSON)
+          </h2>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button id="btnExportBackupJson" class="btn btn-primary btn-sm">📤 バックアップを保存 (JSON)</button>
+            <button id="btnTriggerImportJson" class="btn btn-secondary btn-sm">📥 ファイルから復元</button>
+            <button id="btnResetAllData" class="btn btn-outline-danger btn-sm">⚠️ データを全初期化</button>
+            <input type="file" id="backupFileInput" accept=".json" style="display: none;">
+          </div>
+        </div>
+
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 8px;">
+          ブラウザのキャッシュ消去や別端末（PC・スマートフォン）への移行時にも、入力したガチャデータやスプレッドシート連携設定、登録アイコンを失わずに引き継ぐことができます。
+        </p>
+        <div id="backupStatusMessage" style="display: none; font-size: 12px; padding: 8px 12px; border-radius: 6px; margin-top: 8px;"></div>
+      </div>
     </div>
 
     <!-- App Footer -->
     <footer class="app-footer">
-      <div>Gacha Tabulation <span class="version-badge">v1.0.1</span> | Blue Archive Statistics Analyzer</div>
-      <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Created for roundabout-oxygen | Fully Client-side & Privacy-Protected</div>
+      <div>Gacha Tabulation <span class="version-badge">v1.0.2</span> | Blue Archive Statistics Analyzer</div>
+      <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Blue Archive Gacha Analytics | Fully Client-side & Privacy-Protected</div>
     </footer>
   </div>
 
   <script src="app.js"></script>
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((reg) => {
+            console.log('[PWA] Service Worker registered successfully:', reg.scope);
+          })
+          .catch((err) => {
+            console.warn('[PWA] Service Worker registration failed:', err);
+          });
+      });
+    }
+  </script>
 </body>
 </html>

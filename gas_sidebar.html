@@ -6,7 +6,12 @@
   <title>Gacha Tabulation | Blue Archive Gacha Analytics</title>
   
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="icon.svg">
   <meta name="theme-color" content="#00aeef">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="GachaTab">
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -943,10 +948,10 @@ code {
   min-width: 280px;
   padding: 10px 14px;
   font-size: 13px;
-  background: rgba(14, 22, 37, 0.6);
+  background: #ffffff;
   border: 1.5px solid var(--border);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-main);
   transition: var(--transition);
   font-family: inherit;
 }
@@ -955,7 +960,11 @@ code {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 10px rgba(0, 174, 239, 0.25);
-  background: rgba(14, 22, 37, 0.9);
+  background: #ffffff;
+}
+
+.url-text-input::placeholder {
+  color: var(--text-muted);
 }
 
 .url-btn-group {
@@ -1056,6 +1065,148 @@ code {
 }
 
 /* ==========================================================================
+   Table Controls & Search Bar
+   ========================================================================== */
+.table-controls-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.search-box-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 220px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 6px 30px 6px 12px;
+  background: #ffffff;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-main);
+  font-size: 12px;
+  outline: none;
+  transition: var(--transition);
+}
+
+.search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 10px rgba(0, 174, 239, 0.25);
+  background: #ffffff;
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  display: none;
+}
+
+.clear-search-btn:hover {
+  color: var(--text-main);
+}
+
+.sort-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sort-select {
+  padding: 5px 8px;
+  background: #ffffff;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-main);
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.sort-select:focus {
+  border-color: var(--primary);
+}
+
+.sort-select option {
+  background: #ffffff;
+  color: var(--text-main);
+}
+
+.filter-count-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(0, 174, 239, 0.12);
+  color: var(--primary);
+  border: 1px solid rgba(0, 174, 239, 0.3);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ==========================================================================
+   Spreadsheet Sync Details & Setup Guide
+   ========================================================================== */
+.sync-detail-panel {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(0, 174, 239, 0.05);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 174, 239, 0.18);
+  font-size: 12px;
+}
+
+.sync-detail-item {
+  color: var(--text-muted);
+}
+
+.sync-detail-item b {
+  color: var(--text-main);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.sync-detail-item span {
+  color: var(--primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+}
+
+.sheet-setup-guide {
+  margin-top: 12px;
+  padding: 14px 18px;
+  background: rgba(0, 174, 239, 0.04);
+  border: 1px dashed rgba(0, 174, 239, 0.35);
+  border-radius: 8px;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
    Footer
    ========================================================================== */
 .app-footer {
@@ -1066,6 +1217,7 @@ code {
   font-size: 12px;
   color: var(--text-muted);
 }
+
 
 
 </style>
@@ -1079,7 +1231,7 @@ code {
         <div class="logo-icon">G</div>
         <div class="title-group">
           <h1>Gacha Tabulation</h1>
-          <p>シャーレ ガチャ履歴統計集計システム <span class="version-badge">v1.0.1</span></p>
+          <p>シャーレ ガチャ履歴統計集計システム <span class="version-badge">v1.0.2</span></p>
         </div>
       </div>
       <div id="headerSyncStatus" class="header-sync-status" style="display: none;">
@@ -1196,12 +1348,22 @@ code {
     <div id="history" class="tab-content">
       <div class="card table-card">
         <div class="table-header-bar">
-          <div class="table-title">ガチャ履歴データ一覧 (<span id="tableRowCount">0</span> 件)</div>
-          <div class="filters-group">
-            <button class="filter-btn active" data-filter="all">すべて</button>
-            <button class="filter-btn" data-filter="threeStar">☆3獲得のみ</button>
-            <button class="filter-btn" data-filter="normal">通常(3%)</button>
-            <button class="filter-btn" data-filter="anniv">フェス(6%)</button>
+          <div class="table-title">ガチャ履歴データ一覧 (<span id="tableRowCount">0</span> 件 <span id="tableFilterCountBadge" class="filter-count-badge" style="display:none;"></span>)</div>
+          <div class="table-controls-wrap">
+            <div class="search-box-wrap">
+              <input type="text" id="historySearchInput" class="search-input" placeholder="🔍 生徒名・日付・備考で検索...">
+              <button id="clearHistorySearchBtn" class="clear-search-btn" title="検索クリア">×</button>
+            </div>
+            <div class="filters-group">
+              <button class="filter-btn active" data-filter="all">すべて</button>
+              <button class="filter-btn" data-filter="threeStar">☆3獲得のみ</button>
+              <button class="filter-btn" data-filter="pickup">PUのみ</button>
+              <button class="filter-btn" data-filter="new">新規のみ</button>
+              <button class="filter-btn" data-filter="normal">通常(3%)</button>
+              <button class="filter-btn" data-filter="anniv">フェス(6%)</button>
+              <button class="filter-btn" data-filter="rate50">50%枠</button>
+              <button class="filter-btn" data-filter="rate100">100%交換</button>
+            </div>
           </div>
         </div>
 
@@ -1233,21 +1395,36 @@ code {
     <div id="directory" class="tab-content">
       <div class="card">
         <div class="table-header-bar">
-          <div class="table-title">排出された☆3生徒一覧 (<span id="directoryCount">0</span> 名)</div>
-          <div class="filters-group">
-            <button class="filter-btn active" data-dir-filter="all">全員</button>
-            <button class="filter-btn" data-dir-filter="pickup">ピックアップのみ</button>
-            <button class="filter-btn" data-dir-filter="new">新規のみ</button>
-            <button class="filter-btn" data-dir-filter="spook">被りのみ</button>
-            <button class="filter-btn" data-dir-filter="rate50">50%のみ</button>
-            <button class="filter-btn" data-dir-filter="rate100">100%交換</button>
-            <button class="filter-btn" id="toggleIconImportBtn" style="border-color: var(--primary); color: var(--primary); font-weight: 600;">🔄 アイコン取得</button>
+          <div class="table-title">排出された☆3生徒一覧 (<span id="directoryCount">0</span> 名 <span id="dirFilterCountBadge" class="filter-count-badge" style="display:none;"></span>)</div>
+          <div class="table-controls-wrap">
+            <div class="search-box-wrap">
+              <input type="text" id="dirSearchInput" class="search-input" placeholder="🔍 生徒名で絞り込み (例: アリス, 水着)...">
+              <button id="clearDirSearchBtn" class="clear-search-btn" title="検索クリア">×</button>
+            </div>
+            <div class="sort-select-wrap">
+              <label for="dirSortSelect" style="font-size: 11px; color: var(--text-muted);">並び順:</label>
+              <select id="dirSortSelect" class="sort-select">
+                <option value="recent">入手順 (新→古)</option>
+                <option value="oldest">入手順 (古→新)</option>
+                <option value="count">獲得回数 (多→少)</option>
+                <option value="name">名前順 (50音)</option>
+              </select>
+            </div>
+            <div class="filters-group">
+              <button class="filter-btn active" data-dir-filter="all">全員</button>
+              <button class="filter-btn" data-dir-filter="pickup">PUのみ</button>
+              <button class="filter-btn" data-dir-filter="new">新規のみ</button>
+              <button class="filter-btn" data-dir-filter="spook">被りのみ</button>
+              <button class="filter-btn" data-dir-filter="rate50">50%のみ</button>
+              <button class="filter-btn" data-dir-filter="rate100">100%交換</button>
+              <button class="filter-btn" id="toggleIconImportBtn" style="border-color: var(--primary); color: var(--primary); font-weight: 600;">🔄 アイコン取得</button>
+            </div>
           </div>
         </div>
 
         <!-- Collapsible Import Panel (手動バックアップ用) -->
         <div class="icon-import-panel" id="iconImportPanel">
-          <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #fff;">手動でのアイコン表貼り付け登録 (予備)</h3>
+          <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--text-main);">手動でのアイコン表貼り付け登録 (予備)</h3>
           <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5;">
             ※通常は「🔄 アイコン取得」ボタンを押せば自動で最新アイコンを取得できます。<br>
             手動で登録したい場合は、Wikiの <a href="https://bluearchive.wikiru.jp/?%E3%82%AD%E3%83%A3%E3%83%A9%E3%82%AF%E3%82%BF%E3%83%BC%E4%B8%80%E8%A6%A7" target="_blank" style="color: var(--primary); text-decoration: underline;">キャラクター一覧 🌐</a> や <a href="https://bluearchive.wikiru.jp/?テーブル/キャラアイコン" target="_blank" style="color: var(--primary); text-decoration: underline;">テーブル/キャラアイコン 🌐</a> の表全体をコピーして下に貼り付けてください。
@@ -1272,18 +1449,21 @@ code {
       <!-- 1. Google Sheets Auto-Sync Card -->
       <div class="card" style="margin-bottom: 20px; border: 1.5px solid rgba(0, 174, 239, 0.4); background: linear-gradient(180deg, rgba(0, 174, 239, 0.04) 0%, rgba(255, 255, 255, 0.6) 100%);">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
-          <h2 style="font-size: 17px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+          <h2 style="font-size: 17px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
             <span>🌐</span> Googleスプレッドシート自動巡回連携
           </h2>
-          <span id="sheetSyncBadge" class="status-pill status-pill-idle">未連携</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button id="toggleSheetGuideBtn" class="btn btn-secondary btn-sm" style="font-size: 11px;">❓ 共有設定ガイド</button>
+            <span id="sheetSyncBadge" class="status-pill status-pill-idle">未連携</span>
+          </div>
         </div>
         <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6;">
-          GoogleスプレッドシートのURLを登録すると、<b>アプリ起動時に自動で最新データを巡回・反映</b>します。<br>
+          Googleスプレッドシートの閲覧URLを登録すると、<b>アプリ起動時に自動で最新データを巡回・反映</b>します。<br>
           <span style="color: var(--primary); font-weight: 600;">🔒 プライバシー保護:</span> 個人のガチャ結果は外部サーバー等に一切送信・保存されず、お使いの端末ブラウザ（localStorage）内だけで安全に管理されます。
         </p>
 
         <div class="url-input-container">
-          <input type="text" id="spreadsheetUrlInput" class="url-text-input" placeholder="https://docs.google.com/spreadsheets/d/13ki95KgONxgEqdMc86BLb-W3RSzIUxMc6o_nDIVFmQY/edit?gid=1395601948...">
+          <input type="text" id="spreadsheetUrlInput" class="url-text-input" placeholder="https://docs.google.com/spreadsheets/d/your-spreadsheet-id/edit#gid=0">
           <div class="url-btn-group">
             <button id="saveAndSyncSheetBtn" class="btn btn-primary">🔄 URLを保存して同期</button>
             <button id="syncNowBtn" class="btn btn-secondary" style="display: none;">⚡ 今すぐ再同期</button>
@@ -1292,11 +1472,32 @@ code {
         </div>
 
         <div id="sheetSyncMessage" style="display: none; margin-top: 12px; font-size: 12px; padding: 10px 14px; border-radius: 6px;"></div>
+        
+        <!-- Detailed Sync Status Info -->
+        <div id="sheetSyncDetail" class="sync-detail-panel" style="display: none;">
+          <div class="sync-detail-item"><b>最終同期日時:</b> <span id="syncDetailTime">-</span></div>
+          <div class="sync-detail-item"><b>同期行数 / ☆3排出:</b> <span id="syncDetailRows">-</span></div>
+          <div class="sync-detail-item"><b>対象シートID / gid:</b> <span id="syncDetailGid">-</span></div>
+        </div>
+
+        <!-- Collapsible Sheet Setup Guide -->
+        <div id="sheetSetupGuide" class="sheet-setup-guide" style="display: none;">
+          <h4 style="font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">📖 スプレッドシート共有設定の手順 (失敗する場合のチェック)</h4>
+          <ol style="padding-left: 20px; font-size: 12px; color: var(--text-muted); line-height: 1.7;">
+            <li>スプレッドシートの右上にある青い <b>[共有]</b> ボタンをクリックします。</li>
+            <li>「一般的なアクセス」のプルダウンを「制限付き」から <b>「リンクを知っている全員」</b> に変更します。</li>
+            <li>右側の役割が <b>「閲覧者」</b> になっていることを確認して <b>[完了]</b> をクリックします。</li>
+            <li>ブラウザのアドレスバーのURL（または [リンクをコピー] で取得したURL）を上の入力欄に貼り付け、<b>[🔄 URLを保存して同期]</b> を押してください。</li>
+          </ol>
+          <div style="margin-top: 8px; font-size: 11px; color: var(--primary);">
+            💡 ※シートを非公開にしているとGoogleのセキュリティ制限（403/ログイン要求）により自動取得できません。必ず「リンクを知っている全員（閲覧者）」に設定してください。
+          </div>
+        </div>
       </div>
 
       <!-- 2. Manual Paste Card -->
       <div class="card" style="margin-bottom: 20px;">
-        <h2 style="font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #fff; display: flex; align-items: center; gap: 8px;">
+        <h2 style="font-size: 17px; font-weight: 600; margin-bottom: 12px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
           <span>📋</span> 手動データ貼り付け (ペースト)
         </h2>
         <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6;">
@@ -1323,7 +1524,7 @@ code {
       <!-- 3. Spreadsheet Sample & Template Generator Card -->
       <div class="card">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-          <h2 style="font-size: 17px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
+          <h2 style="font-size: 17px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
             <span>📄</span> スプレッドシート作成サンプル ＆ テンプレート
           </h2>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -1382,23 +1583,57 @@ code {
           </ul>
         </details>
       </div>
+
+      <!-- 4. Data Backup & Restore (JSON) Card -->
+      <div class="card" style="margin-top: 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <h2 style="font-size: 17px; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+            <span>💾</span> データのバックアップ ＆ 復元 (JSON)
+          </h2>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button id="btnExportBackupJson" class="btn btn-primary btn-sm">📤 バックアップを保存 (JSON)</button>
+            <button id="btnTriggerImportJson" class="btn btn-secondary btn-sm">📥 ファイルから復元</button>
+            <button id="btnResetAllData" class="btn btn-outline-danger btn-sm">⚠️ データを全初期化</button>
+            <input type="file" id="backupFileInput" accept=".json" style="display: none;">
+          </div>
+        </div>
+
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 8px;">
+          ブラウザのキャッシュ消去や別端末（PC・スマートフォン）への移行時にも、入力したガチャデータやスプレッドシート連携設定、登録アイコンを失わずに引き継ぐことができます。
+        </p>
+        <div id="backupStatusMessage" style="display: none; font-size: 12px; padding: 8px 12px; border-radius: 6px; margin-top: 8px;"></div>
+      </div>
     </div>
 
     <!-- App Footer -->
     <footer class="app-footer">
-      <div>Gacha Tabulation <span class="version-badge">v1.0.1</span> | Blue Archive Statistics Analyzer</div>
-      <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Created for roundabout-oxygen | Fully Client-side & Privacy-Protected</div>
+      <div>Gacha Tabulation <span class="version-badge">v1.0.2</span> | Blue Archive Statistics Analyzer</div>
+      <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Blue Archive Gacha Analytics | Fully Client-side & Privacy-Protected</div>
     </footer>
   </div>
 
   
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((reg) => {
+            console.log('[PWA] Service Worker registered successfully:', reg.scope);
+          })
+          .catch((err) => {
+            console.warn('[PWA] Service Worker registration failed:', err);
+          });
+      });
+    }
+  </script>
 <script>
 /**
- * Gacha Tabulation (v1.0.1) - Frontend Application Core Logic
+ * Gacha Tabulation (v1.0.2) - Frontend Application Core Logic
  * Blue Archive Gacha Analytics System
  */
 
-const APP_VERSION = 'v1.0.1';
+const APP_VERSION = 'v1.0.2';
 
 document.addEventListener('DOMContentLoaded', () => {
   // State management
@@ -1409,11 +1644,17 @@ document.addEventListener('DOMContentLoaded', () => {
   let studentIcons = {};
   const avatarImgCache = {};
 
-  // History table sorting state
+  // History table filtering and sorting state
   let currentHistoryFilter = 'all';
+  let historySearchQuery = '';
   let currentSortKey = 'date';
   let currentSortOrder = 'desc';
   let globalStudentSummaryList = [];
+
+  // Student directory filtering and sorting state
+  let currentDirectoryFilter = 'all';
+  let directorySearchQuery = '';
+  let currentDirectorySort = 'recent';
 
   // Load Icons first
   loadIcons();
@@ -1426,6 +1667,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initIconFetchListener();
   initSpreadsheetSync();
   initSampleGeneratorListener();
+  initSearchAndFilterListeners();
+  initBackupRestoreListener();
 
   // Load Initial Data (from LocalStorage or auto-sync Spreadsheet)
   loadLocalData();
@@ -2094,27 +2337,59 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Render History Table rows
-  function renderHistoryTable(data, filter = 'all') {
-    const tableBody = document.getElementById('gachaTableBody');
+  function renderHistoryTable(data = gachaData, filter = currentHistoryFilter, searchQuery = historySearchQuery) {
+    const tableBody = document.getElementById('gachaHistoryTable').querySelector('tbody');
+    const badge = document.getElementById('tableFilterCountBadge');
     document.getElementById('tableRowCount').textContent = data.length;
     
     if (data.length === 0) {
       tableBody.innerHTML = `
         <tr>
           <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 40px 0;">
-            データがありません。「データ入力」タブからスプレッドシートのデータを貼り付けるか、GAS連携を行ってください。
+            データがありません。「データ連携・入力」タブからスプレッドシートのURLを登録するか、手動で貼り付けてください。
           </td>
         </tr>`;
+      if (badge) badge.style.display = 'none';
       return;
     }
 
     let filteredData = data;
     if (filter === 'threeStar') {
       filteredData = data.filter(row => row.threeStarCount > 0);
+    } else if (filter === 'pickup') {
+      filteredData = data.filter(row => row.pickupCount > 0 || (row.studentBgs && row.studentBgs.includes('pickup')));
+    } else if (filter === 'new') {
+      filteredData = data.filter(row => row.newCount > 0 || (row.studentBgs && row.studentBgs.includes('new')));
     } else if (filter === 'normal') {
       filteredData = data.filter(row => row.baseRate === 3);
     } else if (filter === 'anniv') {
       filteredData = data.filter(row => row.baseRate === 6);
+    } else if (filter === 'rate50') {
+      filteredData = data.filter(row => row.baseRate === 50);
+    } else if (filter === 'rate100') {
+      filteredData = data.filter(row => row.baseRate === 100);
+    }
+
+    // Apply incremental text search (student names, date, remarks, pulls)
+    if (searchQuery && searchQuery.trim() !== '') {
+      const q = searchQuery.trim().toLowerCase();
+      filteredData = filteredData.filter(row => {
+        const matchName = row.studentNames && row.studentNames.some(n => n.toLowerCase().includes(q));
+        const matchDate = row.date && String(row.date).toLowerCase().includes(q);
+        const matchRemark = row.guaranteeInfo && String(row.guaranteeInfo).toLowerCase().includes(q);
+        const matchPulls = String(row.cumulativePulls).includes(q) || `${row.baseRate}%`.includes(q);
+        return matchName || matchDate || matchRemark || matchPulls;
+      });
+    }
+
+    // Update filter badge
+    if (badge) {
+      if (filteredData.length !== data.length) {
+        badge.textContent = `表示: ${filteredData.length} 件`;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
     }
 
     // Sort according to currentSortKey & currentSortOrder
@@ -2189,8 +2464,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Render Student Directory grid
-  function renderStudentDirectory(students, filter = 'all') {
+  function renderStudentDirectory(students = globalStudentSummaryList, filter = currentDirectoryFilter, searchQuery = directorySearchQuery, sortKey = currentDirectorySort) {
     const container = document.getElementById('studentDirectoryContainer');
+    const badge = document.getElementById('dirFilterCountBadge');
  
     let filtered = students;
     if (filter === 'pickup') {
@@ -2204,21 +2480,55 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (filter === 'rate100') {
       filtered = students.filter(s => s.baseRate === 100);
     }
- 
-    // Sort by Date (newest first), Cumulative Pulls (highest first), and Draw Number (highest first for same 10-pulls)
+
+    // Apply incremental student name search
+    if (searchQuery && searchQuery.trim() !== '') {
+      const q = searchQuery.trim().toLowerCase();
+      filtered = filtered.filter(s => s.name.toLowerCase().includes(q));
+    }
+
+    // Calculate total count for each student across dataset
+    const studentCountMap = {};
+    students.forEach(s => {
+      studentCountMap[s.name] = (studentCountMap[s.name] || 0) + 1;
+    });
+
+    // Custom sorting
     const sortedStudents = [...filtered].sort((a, b) => {
+      if (sortKey === 'name') {
+        return a.name.localeCompare(b.name, 'ja');
+      } else if (sortKey === 'count') {
+        const countDiff = (studentCountMap[b.name] || 0) - (studentCountMap[a.name] || 0);
+        if (countDiff !== 0) return countDiff;
+      } else if (sortKey === 'oldest') {
+        const tA = parseDateToTimestamp(a.date);
+        const tB = parseDateToTimestamp(b.date);
+        if (tA !== tB) return tA - tB;
+        if ((a.cumulativePulls || 0) !== (b.cumulativePulls || 0)) {
+          return (a.cumulativePulls || 0) - (b.cumulativePulls || 0);
+        }
+        return (a.drawNumber || 0) - (b.drawNumber || 0);
+      }
+
+      // Default: 'recent' (newest first)
       const tA = parseDateToTimestamp(a.date);
       const tB = parseDateToTimestamp(b.date);
-      if (tA !== tB) {
-        return tB - tA;
-      }
+      if (tA !== tB) return tB - tA;
       if ((a.cumulativePulls || 0) !== (b.cumulativePulls || 0)) {
         return (b.cumulativePulls || 0) - (a.cumulativePulls || 0);
       }
       return (b.drawNumber || 0) - (a.drawNumber || 0);
     });
  
-    document.getElementById('directoryCount').textContent = sortedStudents.length;
+    document.getElementById('directoryCount').textContent = students.length;
+    if (badge) {
+      if (sortedStudents.length !== students.length) {
+        badge.textContent = `表示: ${sortedStudents.length} 名`;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
  
     if (sortedStudents.length === 0) {
       container.innerHTML = `
@@ -2296,7 +2606,7 @@ document.addEventListener('DOMContentLoaded', () => {
         filterButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentHistoryFilter = btn.getAttribute('data-filter');
-        renderHistoryTable(gachaData, currentHistoryFilter);
+        renderHistoryTable();
       });
     });
     const dirFilterButtons = document.querySelectorAll('[data-dir-filter]');
@@ -2304,10 +2614,68 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', () => {
         dirFilterButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        
-        renderStudentDirectory(globalStudentSummaryList, btn.getAttribute('data-dir-filter'));
+        currentDirectoryFilter = btn.getAttribute('data-dir-filter');
+        renderStudentDirectory();
       });
     });
+  }
+
+  // Initialize Search inputs, Sort selector, and Filter controls
+  function initSearchAndFilterListeners() {
+    // 1. History Table Search
+    const histSearch = document.getElementById('historySearchInput');
+    const clearHistBtn = document.getElementById('clearHistorySearchBtn');
+    if (histSearch) {
+      histSearch.addEventListener('input', (e) => {
+        historySearchQuery = e.target.value;
+        if (clearHistBtn) {
+          clearHistBtn.style.display = historySearchQuery ? 'block' : 'none';
+        }
+        renderHistoryTable();
+      });
+    }
+    if (clearHistBtn) {
+      clearHistBtn.addEventListener('click', () => {
+        if (histSearch) {
+          histSearch.value = '';
+          historySearchQuery = '';
+          clearHistBtn.style.display = 'none';
+          renderHistoryTable();
+        }
+      });
+    }
+
+    // 2. Student Directory Search
+    const dirSearch = document.getElementById('dirSearchInput');
+    const clearDirBtn = document.getElementById('clearDirSearchBtn');
+    if (dirSearch) {
+      dirSearch.addEventListener('input', (e) => {
+        directorySearchQuery = e.target.value;
+        if (clearDirBtn) {
+          clearDirBtn.style.display = directorySearchQuery ? 'block' : 'none';
+        }
+        renderStudentDirectory();
+      });
+    }
+    if (clearDirBtn) {
+      clearDirBtn.addEventListener('click', () => {
+        if (dirSearch) {
+          dirSearch.value = '';
+          directorySearchQuery = '';
+          clearDirBtn.style.display = 'none';
+          renderStudentDirectory();
+        }
+      });
+    }
+
+    // 3. Student Directory Sort Select
+    const dirSort = document.getElementById('dirSortSelect');
+    if (dirSort) {
+      dirSort.addEventListener('change', (e) => {
+        currentDirectorySort = e.target.value;
+        renderStudentDirectory();
+      });
+    }
   }
 
   // Handle table column sorting
@@ -3232,6 +3600,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+    // Toggle Sheet Setup Guide
+    const guideBtn = document.getElementById('toggleSheetGuideBtn');
+    const guidePanel = document.getElementById('sheetSetupGuide');
+    if (guideBtn && guidePanel) {
+      guideBtn.addEventListener('click', () => {
+        const isVisible = guidePanel.style.display !== 'none';
+        guidePanel.style.display = isVisible ? 'none' : 'block';
+        guideBtn.textContent = isVisible ? '❓ 共有設定ガイド' : '✕ ガイドを閉じる';
+      });
+    }
+
     async function syncSpreadsheet(url, isAuto = false) {
       // Extract sheetId and gid
       const sheetIdMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
@@ -3323,6 +3702,18 @@ document.addEventListener('DOMContentLoaded', () => {
             msgDiv.innerHTML = `<strong>✅ 同期完了 (${nowStr}):</strong> ${parsedRows.length}行のデータを取得しました（総ガチャ: ${totalPulls}連、☆3獲得: ${total3Star}名）。`;
           }
 
+          // Update detailed sync status panel
+          const detailPanel = document.getElementById('sheetSyncDetail');
+          const detailTime = document.getElementById('syncDetailTime');
+          const detailRows = document.getElementById('syncDetailRows');
+          const detailGid = document.getElementById('syncDetailGid');
+          if (detailPanel) {
+            detailPanel.style.display = 'flex';
+            if (detailTime) detailTime.textContent = new Date().toLocaleString('ja-JP');
+            if (detailRows) detailRows.textContent = `${parsedRows.length} 行 / ☆3: ${total3Star} 名 (総計 ${totalPulls}連)`;
+            if (detailGid) detailGid.textContent = `ID: ${sheetId.substring(0, 8)}... ${gid ? `(gid: ${gid})` : '(先頭シート)'}`;
+          }
+
           if (headerStatus) {
             headerStatus.style.display = 'flex';
             headerText.textContent = `同期完了 (${nowStr})`;
@@ -3347,11 +3738,140 @@ document.addEventListener('DOMContentLoaded', () => {
         msgDiv.style.background = 'rgba(239, 68, 68, 0.1)';
         msgDiv.style.color = '#ef4444';
         msgDiv.style.border = '1px solid rgba(239, 68, 68, 0.3)';
-        msgDiv.innerHTML = `<strong>⚠️ 同期失敗:</strong> スプレッドシートからデータを取得できませんでした。<br>スプレッドシートの共有設定が「リンクを知っている全員が閲覧可能」になっているかご確認ください。`;
+        msgDiv.innerHTML = `<strong>⚠️ 同期失敗:</strong> スプレッドシートからデータを取得できませんでした。<br>右上の「❓ 共有設定ガイド」をご確認の上、スプレッドシートの権限を「リンクを知っている全員（閲覧者）」に設定してください。`;
+      }
+      if (guidePanel) {
+        guidePanel.style.display = 'block';
+        if (guideBtn) guideBtn.textContent = '✕ ガイドを閉じる';
       }
       if (!isAuto) {
-        alert('スプレッドシートの取得に失敗しました。\n・スプレッドシートが「リンクを知っている全員が閲覧可」になっているか確認してください。\n・URLが正しいか確認してください。');
+        alert('スプレッドシートの取得に失敗しました。\n・スプレッドシートが「リンクを知っている全員が閲覧可」になっているか確認してください。\n・URL形式が正しいか確認してください。');
       }
+    }
+  }
+
+  // Initialize Data Backup and Restore (JSON)
+  function initBackupRestoreListener() {
+    const exportBtn = document.getElementById('btnExportBackupJson');
+    const triggerImportBtn = document.getElementById('btnTriggerImportJson');
+    const fileInput = document.getElementById('backupFileInput');
+    const resetBtn = document.getElementById('btnResetAllData');
+    const statusMsg = document.getElementById('backupStatusMessage');
+
+    function showStatus(text, isError = false) {
+      if (statusMsg) {
+        statusMsg.style.display = 'block';
+        statusMsg.style.background = isError ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)';
+        statusMsg.style.color = isError ? '#ef4444' : 'var(--success)';
+        statusMsg.style.border = `1px solid ${isError ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`;
+        statusMsg.innerHTML = text;
+        setTimeout(() => {
+          if (statusMsg) statusMsg.style.display = 'none';
+        }, 6000);
+      }
+    }
+
+    // Export JSON
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        const backupData = {
+          version: APP_VERSION,
+          exportedAt: new Date().toISOString(),
+          spreadsheetUrl: localStorage.getItem('gacha_spreadsheet_url') || '',
+          lastSyncTime: localStorage.getItem('gacha_last_sync_time') || null,
+          lastIconCrawl: localStorage.getItem('gacha_last_icon_crawl') || null,
+          studentIcons: JSON.parse(localStorage.getItem('schale_student_icons') || '{}'),
+          gachaData: JSON.parse(localStorage.getItem('schale_gacha_data') || '[]')
+        };
+
+        const jsonStr = JSON.stringify(backupData, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const now = new Date();
+        const timestamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+        const fileName = `gacha_tabulation_backup_${timestamp}.json`;
+
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+
+        showStatus(`✅ バックアップファイル <code>${fileName}</code> を保存しました！`);
+      });
+    }
+
+    // Trigger Import File Dialog
+    if (triggerImportBtn && fileInput) {
+      triggerImportBtn.addEventListener('click', () => {
+        fileInput.value = '';
+        fileInput.click();
+      });
+    }
+
+    // Handle File Import
+    if (fileInput) {
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const data = JSON.parse(event.target.result);
+            if (!data || typeof data !== 'object') {
+              throw new Error('無効なJSONフォーマットです。');
+            }
+
+            // Restore gacha data
+            if (Array.isArray(data.gachaData)) {
+              localStorage.setItem('schale_gacha_data', JSON.stringify(data.gachaData));
+              processRawRows(data.gachaData);
+            }
+
+            // Restore icons
+            if (data.studentIcons && typeof data.studentIcons === 'object') {
+              studentIcons = { ...studentIcons, ...data.studentIcons };
+              localStorage.setItem('schale_student_icons', JSON.stringify(studentIcons));
+            }
+
+            // Restore URL & timestamps
+            if (data.spreadsheetUrl) {
+              localStorage.setItem('gacha_spreadsheet_url', data.spreadsheetUrl);
+              const urlInput = document.getElementById('spreadsheetUrlInput');
+              if (urlInput) urlInput.value = data.spreadsheetUrl;
+            }
+            if (data.lastIconCrawl) localStorage.setItem('gacha_last_icon_crawl', data.lastIconCrawl);
+            if (data.lastSyncTime) localStorage.setItem('gacha_last_sync_time', data.lastSyncTime);
+
+            showStatus(`✅ 復元完了: バックアップデータを正常にインポートしました！`);
+            aggregateAndDisplay();
+          } catch (err) {
+            console.error('Import backup error:', err);
+            showStatus(`❌ インポート失敗: 正しいバックアップJSONファイルを選択してください。`, true);
+          }
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    // Reset All Data
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        const confirmed = window.confirm(
+          '⚠️ 注意:\nすべてのガチャデータ、登録したスプレッドシートURL、取得したアイコンキャッシュを初期化します。\nこの操作は元に戻せません。よろしいですか？'
+        );
+        if (confirmed) {
+          localStorage.removeItem('schale_gacha_data');
+          localStorage.removeItem('gacha_spreadsheet_url');
+          localStorage.removeItem('gacha_last_sync_time');
+          localStorage.removeItem('gacha_last_icon_crawl');
+          localStorage.removeItem('schale_student_icons');
+          alert('すべてのデータを初期化しました。');
+          location.reload();
+        }
+      });
     }
   }
 

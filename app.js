@@ -1,9 +1,9 @@
 /**
- * Gacha Tabulation (v1.0.1) - Frontend Application Core Logic
+ * Gacha Tabulation (v1.0.2) - Frontend Application Core Logic
  * Blue Archive Gacha Analytics System
  */
 
-const APP_VERSION = 'v1.0.1';
+const APP_VERSION = 'v1.0.2';
 
 document.addEventListener('DOMContentLoaded', () => {
   // State management
@@ -14,11 +14,17 @@ document.addEventListener('DOMContentLoaded', () => {
   let studentIcons = {};
   const avatarImgCache = {};
 
-  // History table sorting state
+  // History table filtering and sorting state
   let currentHistoryFilter = 'all';
+  let historySearchQuery = '';
   let currentSortKey = 'date';
   let currentSortOrder = 'desc';
   let globalStudentSummaryList = [];
+
+  // Student directory filtering and sorting state
+  let currentDirectoryFilter = 'all';
+  let directorySearchQuery = '';
+  let currentDirectorySort = 'recent';
 
   // Load Icons first
   loadIcons();
@@ -31,6 +37,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initIconFetchListener();
   initSpreadsheetSync();
   initSampleGeneratorListener();
+  initSearchAndFilterListeners();
+  initBackupRestoreListener();
 
   // Load Initial Data (from LocalStorage or auto-sync Spreadsheet)
   loadLocalData();
@@ -699,27 +707,59 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Render History Table rows
-  function renderHistoryTable(data, filter = 'all') {
-    const tableBody = document.getElementById('gachaTableBody');
+  function renderHistoryTable(data = gachaData, filter = currentHistoryFilter, searchQuery = historySearchQuery) {
+    const tableBody = document.getElementById('gachaHistoryTable').querySelector('tbody');
+    const badge = document.getElementById('tableFilterCountBadge');
     document.getElementById('tableRowCount').textContent = data.length;
     
     if (data.length === 0) {
       tableBody.innerHTML = `
         <tr>
           <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 40px 0;">
-            データがありません。「データ入力」タブからスプレッドシートのデータを貼り付けるか、GAS連携を行ってください。
+            データがありません。「データ連携・入力」タブからスプレッドシートのURLを登録するか、手動で貼り付けてください。
           </td>
         </tr>`;
+      if (badge) badge.style.display = 'none';
       return;
     }
 
     let filteredData = data;
     if (filter === 'threeStar') {
       filteredData = data.filter(row => row.threeStarCount > 0);
+    } else if (filter === 'pickup') {
+      filteredData = data.filter(row => row.pickupCount > 0 || (row.studentBgs && row.studentBgs.includes('pickup')));
+    } else if (filter === 'new') {
+      filteredData = data.filter(row => row.newCount > 0 || (row.studentBgs && row.studentBgs.includes('new')));
     } else if (filter === 'normal') {
       filteredData = data.filter(row => row.baseRate === 3);
     } else if (filter === 'anniv') {
       filteredData = data.filter(row => row.baseRate === 6);
+    } else if (filter === 'rate50') {
+      filteredData = data.filter(row => row.baseRate === 50);
+    } else if (filter === 'rate100') {
+      filteredData = data.filter(row => row.baseRate === 100);
+    }
+
+    // Apply incremental text search (student names, date, remarks, pulls)
+    if (searchQuery && searchQuery.trim() !== '') {
+      const q = searchQuery.trim().toLowerCase();
+      filteredData = filteredData.filter(row => {
+        const matchName = row.studentNames && row.studentNames.some(n => n.toLowerCase().includes(q));
+        const matchDate = row.date && String(row.date).toLowerCase().includes(q);
+        const matchRemark = row.guaranteeInfo && String(row.guaranteeInfo).toLowerCase().includes(q);
+        const matchPulls = String(row.cumulativePulls).includes(q) || `${row.baseRate}%`.includes(q);
+        return matchName || matchDate || matchRemark || matchPulls;
+      });
+    }
+
+    // Update filter badge
+    if (badge) {
+      if (filteredData.length !== data.length) {
+        badge.textContent = `表示: ${filteredData.length} 件`;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
     }
 
     // Sort according to currentSortKey & currentSortOrder
@@ -794,8 +834,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Render Student Directory grid
-  function renderStudentDirectory(students, filter = 'all') {
+  function renderStudentDirectory(students = globalStudentSummaryList, filter = currentDirectoryFilter, searchQuery = directorySearchQuery, sortKey = currentDirectorySort) {
     const container = document.getElementById('studentDirectoryContainer');
+    const badge = document.getElementById('dirFilterCountBadge');
  
     let filtered = students;
     if (filter === 'pickup') {
@@ -809,21 +850,55 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (filter === 'rate100') {
       filtered = students.filter(s => s.baseRate === 100);
     }
- 
-    // Sort by Date (newest first), Cumulative Pulls (highest first), and Draw Number (highest first for same 10-pulls)
+
+    // Apply incremental student name search
+    if (searchQuery && searchQuery.trim() !== '') {
+      const q = searchQuery.trim().toLowerCase();
+      filtered = filtered.filter(s => s.name.toLowerCase().includes(q));
+    }
+
+    // Calculate total count for each student across dataset
+    const studentCountMap = {};
+    students.forEach(s => {
+      studentCountMap[s.name] = (studentCountMap[s.name] || 0) + 1;
+    });
+
+    // Custom sorting
     const sortedStudents = [...filtered].sort((a, b) => {
+      if (sortKey === 'name') {
+        return a.name.localeCompare(b.name, 'ja');
+      } else if (sortKey === 'count') {
+        const countDiff = (studentCountMap[b.name] || 0) - (studentCountMap[a.name] || 0);
+        if (countDiff !== 0) return countDiff;
+      } else if (sortKey === 'oldest') {
+        const tA = parseDateToTimestamp(a.date);
+        const tB = parseDateToTimestamp(b.date);
+        if (tA !== tB) return tA - tB;
+        if ((a.cumulativePulls || 0) !== (b.cumulativePulls || 0)) {
+          return (a.cumulativePulls || 0) - (b.cumulativePulls || 0);
+        }
+        return (a.drawNumber || 0) - (b.drawNumber || 0);
+      }
+
+      // Default: 'recent' (newest first)
       const tA = parseDateToTimestamp(a.date);
       const tB = parseDateToTimestamp(b.date);
-      if (tA !== tB) {
-        return tB - tA;
-      }
+      if (tA !== tB) return tB - tA;
       if ((a.cumulativePulls || 0) !== (b.cumulativePulls || 0)) {
         return (b.cumulativePulls || 0) - (a.cumulativePulls || 0);
       }
       return (b.drawNumber || 0) - (a.drawNumber || 0);
     });
  
-    document.getElementById('directoryCount').textContent = sortedStudents.length;
+    document.getElementById('directoryCount').textContent = students.length;
+    if (badge) {
+      if (sortedStudents.length !== students.length) {
+        badge.textContent = `表示: ${sortedStudents.length} 名`;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
  
     if (sortedStudents.length === 0) {
       container.innerHTML = `
@@ -901,7 +976,7 @@ document.addEventListener('DOMContentLoaded', () => {
         filterButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentHistoryFilter = btn.getAttribute('data-filter');
-        renderHistoryTable(gachaData, currentHistoryFilter);
+        renderHistoryTable();
       });
     });
     const dirFilterButtons = document.querySelectorAll('[data-dir-filter]');
@@ -909,10 +984,68 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', () => {
         dirFilterButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        
-        renderStudentDirectory(globalStudentSummaryList, btn.getAttribute('data-dir-filter'));
+        currentDirectoryFilter = btn.getAttribute('data-dir-filter');
+        renderStudentDirectory();
       });
     });
+  }
+
+  // Initialize Search inputs, Sort selector, and Filter controls
+  function initSearchAndFilterListeners() {
+    // 1. History Table Search
+    const histSearch = document.getElementById('historySearchInput');
+    const clearHistBtn = document.getElementById('clearHistorySearchBtn');
+    if (histSearch) {
+      histSearch.addEventListener('input', (e) => {
+        historySearchQuery = e.target.value;
+        if (clearHistBtn) {
+          clearHistBtn.style.display = historySearchQuery ? 'block' : 'none';
+        }
+        renderHistoryTable();
+      });
+    }
+    if (clearHistBtn) {
+      clearHistBtn.addEventListener('click', () => {
+        if (histSearch) {
+          histSearch.value = '';
+          historySearchQuery = '';
+          clearHistBtn.style.display = 'none';
+          renderHistoryTable();
+        }
+      });
+    }
+
+    // 2. Student Directory Search
+    const dirSearch = document.getElementById('dirSearchInput');
+    const clearDirBtn = document.getElementById('clearDirSearchBtn');
+    if (dirSearch) {
+      dirSearch.addEventListener('input', (e) => {
+        directorySearchQuery = e.target.value;
+        if (clearDirBtn) {
+          clearDirBtn.style.display = directorySearchQuery ? 'block' : 'none';
+        }
+        renderStudentDirectory();
+      });
+    }
+    if (clearDirBtn) {
+      clearDirBtn.addEventListener('click', () => {
+        if (dirSearch) {
+          dirSearch.value = '';
+          directorySearchQuery = '';
+          clearDirBtn.style.display = 'none';
+          renderStudentDirectory();
+        }
+      });
+    }
+
+    // 3. Student Directory Sort Select
+    const dirSort = document.getElementById('dirSortSelect');
+    if (dirSort) {
+      dirSort.addEventListener('change', (e) => {
+        currentDirectorySort = e.target.value;
+        renderStudentDirectory();
+      });
+    }
   }
 
   // Handle table column sorting
@@ -1837,6 +1970,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+    // Toggle Sheet Setup Guide
+    const guideBtn = document.getElementById('toggleSheetGuideBtn');
+    const guidePanel = document.getElementById('sheetSetupGuide');
+    if (guideBtn && guidePanel) {
+      guideBtn.addEventListener('click', () => {
+        const isVisible = guidePanel.style.display !== 'none';
+        guidePanel.style.display = isVisible ? 'none' : 'block';
+        guideBtn.textContent = isVisible ? '❓ 共有設定ガイド' : '✕ ガイドを閉じる';
+      });
+    }
+
     async function syncSpreadsheet(url, isAuto = false) {
       // Extract sheetId and gid
       const sheetIdMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
@@ -1928,6 +2072,18 @@ document.addEventListener('DOMContentLoaded', () => {
             msgDiv.innerHTML = `<strong>✅ 同期完了 (${nowStr}):</strong> ${parsedRows.length}行のデータを取得しました（総ガチャ: ${totalPulls}連、☆3獲得: ${total3Star}名）。`;
           }
 
+          // Update detailed sync status panel
+          const detailPanel = document.getElementById('sheetSyncDetail');
+          const detailTime = document.getElementById('syncDetailTime');
+          const detailRows = document.getElementById('syncDetailRows');
+          const detailGid = document.getElementById('syncDetailGid');
+          if (detailPanel) {
+            detailPanel.style.display = 'flex';
+            if (detailTime) detailTime.textContent = new Date().toLocaleString('ja-JP');
+            if (detailRows) detailRows.textContent = `${parsedRows.length} 行 / ☆3: ${total3Star} 名 (総計 ${totalPulls}連)`;
+            if (detailGid) detailGid.textContent = `ID: ${sheetId.substring(0, 8)}... ${gid ? `(gid: ${gid})` : '(先頭シート)'}`;
+          }
+
           if (headerStatus) {
             headerStatus.style.display = 'flex';
             headerText.textContent = `同期完了 (${nowStr})`;
@@ -1952,11 +2108,140 @@ document.addEventListener('DOMContentLoaded', () => {
         msgDiv.style.background = 'rgba(239, 68, 68, 0.1)';
         msgDiv.style.color = '#ef4444';
         msgDiv.style.border = '1px solid rgba(239, 68, 68, 0.3)';
-        msgDiv.innerHTML = `<strong>⚠️ 同期失敗:</strong> スプレッドシートからデータを取得できませんでした。<br>スプレッドシートの共有設定が「リンクを知っている全員が閲覧可能」になっているかご確認ください。`;
+        msgDiv.innerHTML = `<strong>⚠️ 同期失敗:</strong> スプレッドシートからデータを取得できませんでした。<br>右上の「❓ 共有設定ガイド」をご確認の上、スプレッドシートの権限を「リンクを知っている全員（閲覧者）」に設定してください。`;
+      }
+      if (guidePanel) {
+        guidePanel.style.display = 'block';
+        if (guideBtn) guideBtn.textContent = '✕ ガイドを閉じる';
       }
       if (!isAuto) {
-        alert('スプレッドシートの取得に失敗しました。\n・スプレッドシートが「リンクを知っている全員が閲覧可」になっているか確認してください。\n・URLが正しいか確認してください。');
+        alert('スプレッドシートの取得に失敗しました。\n・スプレッドシートが「リンクを知っている全員が閲覧可」になっているか確認してください。\n・URL形式が正しいか確認してください。');
       }
+    }
+  }
+
+  // Initialize Data Backup and Restore (JSON)
+  function initBackupRestoreListener() {
+    const exportBtn = document.getElementById('btnExportBackupJson');
+    const triggerImportBtn = document.getElementById('btnTriggerImportJson');
+    const fileInput = document.getElementById('backupFileInput');
+    const resetBtn = document.getElementById('btnResetAllData');
+    const statusMsg = document.getElementById('backupStatusMessage');
+
+    function showStatus(text, isError = false) {
+      if (statusMsg) {
+        statusMsg.style.display = 'block';
+        statusMsg.style.background = isError ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)';
+        statusMsg.style.color = isError ? '#ef4444' : 'var(--success)';
+        statusMsg.style.border = `1px solid ${isError ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`;
+        statusMsg.innerHTML = text;
+        setTimeout(() => {
+          if (statusMsg) statusMsg.style.display = 'none';
+        }, 6000);
+      }
+    }
+
+    // Export JSON
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        const backupData = {
+          version: APP_VERSION,
+          exportedAt: new Date().toISOString(),
+          spreadsheetUrl: localStorage.getItem('gacha_spreadsheet_url') || '',
+          lastSyncTime: localStorage.getItem('gacha_last_sync_time') || null,
+          lastIconCrawl: localStorage.getItem('gacha_last_icon_crawl') || null,
+          studentIcons: JSON.parse(localStorage.getItem('schale_student_icons') || '{}'),
+          gachaData: JSON.parse(localStorage.getItem('schale_gacha_data') || '[]')
+        };
+
+        const jsonStr = JSON.stringify(backupData, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const now = new Date();
+        const timestamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+        const fileName = `gacha_tabulation_backup_${timestamp}.json`;
+
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+
+        showStatus(`✅ バックアップファイル <code>${fileName}</code> を保存しました！`);
+      });
+    }
+
+    // Trigger Import File Dialog
+    if (triggerImportBtn && fileInput) {
+      triggerImportBtn.addEventListener('click', () => {
+        fileInput.value = '';
+        fileInput.click();
+      });
+    }
+
+    // Handle File Import
+    if (fileInput) {
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const data = JSON.parse(event.target.result);
+            if (!data || typeof data !== 'object') {
+              throw new Error('無効なJSONフォーマットです。');
+            }
+
+            // Restore gacha data
+            if (Array.isArray(data.gachaData)) {
+              localStorage.setItem('schale_gacha_data', JSON.stringify(data.gachaData));
+              processRawRows(data.gachaData);
+            }
+
+            // Restore icons
+            if (data.studentIcons && typeof data.studentIcons === 'object') {
+              studentIcons = { ...studentIcons, ...data.studentIcons };
+              localStorage.setItem('schale_student_icons', JSON.stringify(studentIcons));
+            }
+
+            // Restore URL & timestamps
+            if (data.spreadsheetUrl) {
+              localStorage.setItem('gacha_spreadsheet_url', data.spreadsheetUrl);
+              const urlInput = document.getElementById('spreadsheetUrlInput');
+              if (urlInput) urlInput.value = data.spreadsheetUrl;
+            }
+            if (data.lastIconCrawl) localStorage.setItem('gacha_last_icon_crawl', data.lastIconCrawl);
+            if (data.lastSyncTime) localStorage.setItem('gacha_last_sync_time', data.lastSyncTime);
+
+            showStatus(`✅ 復元完了: バックアップデータを正常にインポートしました！`);
+            aggregateAndDisplay();
+          } catch (err) {
+            console.error('Import backup error:', err);
+            showStatus(`❌ インポート失敗: 正しいバックアップJSONファイルを選択してください。`, true);
+          }
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    // Reset All Data
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        const confirmed = window.confirm(
+          '⚠️ 注意:\nすべてのガチャデータ、登録したスプレッドシートURL、取得したアイコンキャッシュを初期化します。\nこの操作は元に戻せません。よろしいですか？'
+        );
+        if (confirmed) {
+          localStorage.removeItem('schale_gacha_data');
+          localStorage.removeItem('gacha_spreadsheet_url');
+          localStorage.removeItem('gacha_last_sync_time');
+          localStorage.removeItem('gacha_last_icon_crawl');
+          localStorage.removeItem('schale_student_icons');
+          alert('すべてのデータを初期化しました。');
+          location.reload();
+        }
+      });
     }
   }
 
